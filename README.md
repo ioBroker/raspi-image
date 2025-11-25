@@ -1,5 +1,5 @@
-# kisshome-raspi-image
-Creates Raspberry Pi Image with preinstalled kisshome-research adapter
+# raspi-image
+Creates Raspberry Pi Image with preinstalled admin, welcome and wireless-settings adapters
 
 ## How to start
 Create first with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) the Raspberry Pi 5 image.
