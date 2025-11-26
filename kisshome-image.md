@@ -8,6 +8,6 @@ echo sudo apt update
 sudo apt install -y git
 cd /opt
 sudo git clone https://github.com/ioBroker/raspi-image
-sudo chmod +x /opt/kisshome-raspi-image/install_kisshome.sh
-sudo /opt/kisshome-raspi-image/install_kisshome.sh
+sudo chmod +x /opt/raspi-image/install_kisshome.sh
+sudo /opt/raspi-image/install_kisshome.sh
 ```

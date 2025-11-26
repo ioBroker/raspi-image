@@ -1,72 +1,137 @@
-# raspi-image
+For english version, see [english](#english-instructions)
 
-This repository contains scripts to create and configure a Raspberry Pi image with preinstalled ioBroker adapters (e.g. `admin`, `welcome`, `wireless-settings`) and an alternative Kisshome image.
+# Deutsch
+## Schreibe image to SD card — Windows, Linux, macOS
 
-## Requirements
+> Wichtig: Immer das korrekte Zielgerät prüfen. Ein falsches Ziel löscht Daten.
 
+### Prerequisites
 - Raspberry Pi 5  
-- SD card (recommended: at least 16 GB)  
-- [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on your PC  
-- Internet connection during installation  
+- SD-Karte (empfohlen: mindestens 16 GB)
+- Karenleser für den PC
+- Download image von https://www.iobroker.net/#de/download
 
-## Create a base image with Raspberry Pi Imager
+### Windows (GUI, empfohlen)
+1. Installiere und starte [`balenaEtcher`](https://etcher.balena.io/).
+2. Wähle das Image (`path/to/ioBroker-image-RPi_5_20XX_XX_XX.zip`).
+3. Wähle die SD‑Karte als Ziel.
+4. Starte den Schreibvorgang und warte, bis er abgeschlossen ist.
+5. Karte sicher auswerfen.
 
-1. Start [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
-2. Select your raspberry pi version.
-3. Select a suitable OS, e.g. `Raspberry Pi OS Lite (64-bit)` in "Other".
-4. Select your SD card.
-5. In the Imager settings, already configure:
-    - Hostname
-    - User and password
-    - Wi-Fi (if needed)
-    - SSH (recommended: enable)
-   
-![step1](step1.png)
+### Linux (GUI oder CLI)
+#### GUI
+- Nutze [`balenaEtcher`](https://etcher.balena.io/) wie unter Windows.
 
-![step2](step2.png)
+#### CLI (sicher und schnell)
+1. Gerät identifizieren:  
+   `lsblk`
+2. Image entpacken (ersetze `path/to/*`):
+   `unzip path/to/ioBroker-image-RPi_5_20XX_XX_XX.zip -d .`
+3. Alle Partitionen des Ziels unmounten (ersetze `/dev/sdX`):  
+   `sudo umount /dev/sdX*`
+4. Image schreiben (ersetze Pfad und Gerät):  
+   `sudo dd if=iobroker-image.img of=/dev/sdX bs=4M status=progress conv=fsync`
+5. Schreibcache leeren und fertigstellen:  
+   `sudo sync`
+6. Karte sicher entfernen.
 
-![step3](step3.png)
+### macOS (GUI oder CLI)
+#### GUI
+- Nutze [`balenaEtcher`](https://etcher.balena.io/).
 
-![step3](step4.png)
+#### CLI
+1. Liste der Laufwerke anzeigen:  
+   `diskutil list`
+2. Image entpacken (ersetze `path/to/*`):
+   `unzip path/to/ioBroker-image-RPi_5_20XX_XX_XX.zip -d .`
+3. Ganze Karte unmounten (ersetze `diskN`):  
+   `sudo diskutil unmountDisk /dev/diskN`
+4. Image schreiben (nutze `rdisk` für bessere Geschwindigkeit):  
+   `sudo dd if=iobroker-image.img of=/dev/rdiskN bs=4m status=progress`
+5. Karte auswerfen:  
+   `sudo diskutil eject /dev/diskN`
 
-![step3](step5.png)
+### Hinweise & Troubleshooting
+- Achte genau auf das Zielgerät (`/dev/sdX`, `diskN`). Ein Fehler löscht Daten.
+- `status=progress` zeigt Fortschritt bei `dd` (Linux/macOS).
+- Bei Problemen: Karte nochmal partitionieren/formattieren, andere SD‑Karte oder Adapter testen.
+- Nach dem Erstellen des Images ggf. die erste Boot‑Konfiguration (SSH, WLAN, Hostname) anpassen.
 
-![step3](step6.png)
-
-![step3](step7.png)
-
----
-
-## Create ioBroker image
-
-When creating the image with Raspberry Pi Imager, use:
-
-- Hostname: `iobroker`  
-- Username: `iob`  
-- Password: `2024=smart!` *(initial password, must be changed later\!)*
-
-After the first boot, log in via SSH and run:
+### Verbindung zum Raspberry Pi
+Nach dem als die SD-Karte ins Raspberry Pi eingesetzt und gestartet wurde, kann über SSH eine Verbindung hergestellt werden:
 
 ```bash
-sudo sed -i 's/^#NTP=.*/NTP=time.google.com/' /etc/systemd/timesyncd.conf
-sudo systemctl restart systemd-timesyncd
-
-echo "sudo apt update"
-sudo apt update
-sudo apt install -y git
-
-cd /opt
-sudo git clone https://github.com/ioBroker/raspi-image
-sudo chmod +x /opt/kisshome-raspi-image/install.sh
-sudo /opt/kisshome-raspi-image/install.sh
+ssh iob@kisshome
 ```
 
-## Copy image
-Use [HDDRawCopy1.20Portable.exe](https://hddguru.com/software/HDD-Raw-Copy-Tool/HDDRawCopy1.20Portable.exe) or [win32diskimager-1.0.0-install.exe](https://sourceforge.net/projects/win32diskimager/files/latest/download) to make an image.
+Password: `2024=smart!` (Bitte unbedingt nach dem Login mit `passwd` ändern)
 
-![step4](step8.png)
+Man sollte auch im Browser unter http://iobroker.local:8081 die ioBroker Admin-Oberfläche erreichen können.
 
-## After creation
-The ssh login is `iob` and the password is `2024=smart!`. Change the password immediately after the first reboot!
+# English instructions
+## Write image to SD card — Windows, Linux, macOS
 
-The root password is `2024=smartroot!`.
+> Important: Always verify the target device. Writing to the wrong device will erase data.
+
+### Prerequisites
+- Raspberry Pi 5
+- SD-Card (suggested: minimal 16 GB)
+- Card-reader for PC
+- Download image from https://www.iobroker.net/#en/download
+
+### Windows (GUI, recommended)
+1. Install and start `balenaEtcher` (`https://etcher.balena.io/`).
+2. Select the image (for example `path/to/iobroker-image-RPi_5_20XX_XX_XX.zip`).
+3. Select the SD card as the target.
+4. Start the write process and wait until it finishes.
+5. Safely eject the card.
+
+### Linux (GUI or CLI)
+#### GUI
+- Use `balenaEtcher` as on Windows.
+
+#### CLI (safe and fast)
+1. Identify drives:
+   `lsblk`
+2. Unpack the image (replace `path/to/*`):
+   `unzip path/to/iobroker-image-RPi_5_20XX_XX_XX.zip -d .`
+3. Unmount all partitions of the target (replace `/dev/sdX`):
+   `sudo umount /dev/sdX*`
+4. Write the image (replace paths and device):
+   `sudo dd if=iobroker-image.img of=/dev/sdX bs=4M status=progress conv=fsync`
+5. Flush write cache:
+   `sudo sync`
+6. Remove the card safely.
+
+### macOS (GUI or CLI)
+#### GUI
+- Use `balenaEtcher`.
+
+#### CLI
+1. List disks:
+   `diskutil list`
+2. Unpack the image (replace `path/to/*`):
+   `unzip path/to/iobroker-image-RPi_5_20XX_XX_XX.zip -d .`
+3. Unmount the entire card (replace `diskN`):
+   `sudo diskutil unmountDisk /dev/diskN`
+4. Write the image (use `rdisk` for faster access):
+   `sudo dd if=iobroker-image.img of=/dev/rdiskN bs=4m status=progress`
+5. Eject the card:
+   `sudo diskutil eject /dev/diskN`
+
+### Notes & Troubleshooting
+- Double-check the target device (`/dev/sdX`, `diskN`). A wrong device will delete data.
+- Use `status=progress` to see progress with `dd`.
+- If problems occur: repartition/format the card, try another SD card or adapter.
+- After creating the image, adjust first-boot settings (SSH, Wi\-Fi, hostname) as needed.
+
+### Connecting to the Raspberry Pi
+After inserting the SD card and booting the Pi, connect via SSH:
+
+`ssh iob@kisshome`
+
+Password: `2024=smart!` (Please change it immediately after login with `passwd`)
+
+The ioBroker admin UI should be available at:
+
+http://iobroker.local:8081

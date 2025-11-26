@@ -27,7 +27,7 @@ sudo timedatectl set-timezone Europe/Berlin
 sudo dpkg-reconfigure --frontend noninteractive tzdata
 
 # Install iobroker
-sudo apt-get -y install net-tools curl wget openssh-server software-properties-common build-essential ca-certificates nano
+sudo apt-get -y install net-tools curl wget openssh-server build-essential ca-certificates nano
 curl -sLf https://iobroker.net/install.sh | bash -
 cd /opt/iobroker
 iob stop
@@ -39,7 +39,7 @@ iob add wireless-settings
 iob unsetup -y
 
 # Clean up
-sudo rm -rf /opt/kisshome-raspi-image/
+sudo rm -rf /opt/raspi-image/
 sudo rm -rf /etc/NetworkManager/system-connections/*
 history -c
 sudo shutdown -h now
