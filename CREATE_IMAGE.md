@@ -2,6 +2,8 @@
 
 This repository contains scripts to create and configure a Raspberry Pi image with preinstalled ioBroker adapters (e.g. `admin`, `welcome`, `wireless-settings`) and an alternative Kisshome image.
 
+> **Tip:** The image can now be built automatically without Raspberry Pi hardware via GitHub Actions. See [BUILD.md](BUILD.md).
+
 ## Requirements
 
 - Raspberry Pi 5  

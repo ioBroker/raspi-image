@@ -1,0 +1,15 @@
+#cloud-config
+# Applied by cloud-init on the very first boot.
+# Raspberry Pi Imager overwrites this file if "OS customisation" is used.
+hostname: @HOSTNAME@
+manage_etc_hosts: true
+
+users:
+  - name: iob
+    gecos: ioBroker
+    groups: users,adm,dialout,audio,netdev,video,plugdev,input,gpio,i2c,spi,render,sudo
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: @PASSWD_HASH@
+
+ssh_pwauth: true
