@@ -13,7 +13,8 @@ No Raspberry Pi, no SD card, no manual copying with HDDRawCopy.
 With the option **Upload to iobroker.live** (default on) the workflow additionally:
 
 1. uploads `ioBroker-image-RPi_5_YYYY_MM_DD.zip` and its `.sha256` via SFTP to
-   `/images/`, i.e. `https://iobroker.live/images/ioBroker-image-RPi_5_YYYY_MM_DD.zip`,
+   `https://iobroker.live/images/ioBroker-image-RPi_5_YYYY_MM_DD.zip`
+   (folder `/images` for the main account, `/` for an account restricted to `/images`),
    and checks that the URL delivers the complete file
 2. opens a pull request in [ioBroker.docs](https://github.com/ioBroker/ioBroker.docs) that
    changes the download link in `engine-2/front-end/src/config/installation.json`.

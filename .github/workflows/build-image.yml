@@ -34,6 +34,8 @@ jobs:
       SFTP_PORT: ${{ secrets.VAR_ACTIONS_SFPT_PORT }}
       SFTP_USERNAME: ${{ secrets.VAR_ACTIONS_SFTP_USERNAME }}
       SFTP_PASSWORD: ${{ secrets.VAR_ACTIONS_SFTP_PASSWORD }}
+      # Optional. Empty: /images if it exists, otherwise "/" (account restricted to /images)
+      SFTP_REMOTE_DIR: ${{ vars.SFTP_REMOTE_DIR }}
       DOCS_PR_TOKEN: ${{ secrets.DOCS_PR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +66,7 @@ jobs:
         id: sftp
         if: ${{ inputs.upload && env.SFTP_HOST != '' && env.SFTP_USERNAME != '' && env.SFTP_PASSWORD != '' }}
         run: |
-          ./upload-sftp.sh "out/$IMAGE_FILE" /images
+          ./upload-sftp.sh "out/$IMAGE_FILE"
           echo "Image: https://iobroker.live/images/$IMAGE_FILE" >> "$GITHUB_STEP_SUMMARY"
 
       - name: SFTP skipped
