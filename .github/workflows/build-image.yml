@@ -1,0 +1,55 @@
+name: Build Raspberry Pi 5 image
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish as GitHub Release"
+        type: boolean
+        default: false
+      img_url:
+        description: "Base image (empty = newest Raspberry Pi OS Lite 64-bit)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # Native ARM64 runner: no emulation, free for public repositories
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y xz-utils parted e2fsprogs dosfstools openssl
+
+      - name: Build image
+        env:
+          IMG_URL: ${{ inputs.img_url }}
+        run: |
+          chmod +x build.sh customize.sh
+          if [ -n "$IMG_URL" ]; then sudo -E ./build.sh; else sudo ./build.sh; fi
+          sudo chown -R "$USER" out
+          ls -lh out
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iobroker-rpi5-image
+          path: out/*
+          compression-level: 0   # already xz compressed
+          retention-days: 14
+
+      - name: Publish release
+        if: ${{ inputs.publish }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: image-${{ github.run_number }}
+          name: ioBroker image for Raspberry Pi 5 (build ${{ github.run_number }})
+          body_path: out/release-notes.md
+          files: |
+            out/*.img.xz
+            out/*.sha256
