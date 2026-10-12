@@ -1,17 +1,23 @@
 #!/bin/bash
-# Uploads the image (and its .sha256) to the iobroker.live SFTP server.
-# The SFTP root is the web root of https://iobroker.live, so
-#   /images/<file>  =>  https://iobroker.live/images/<file>
+# Uploads the image (and its .sha256) to the iobroker.live SFTP server, so it is
+# reachable as https://iobroker.live/images/<file>.
 #
-# Usage: ./upload-sftp.sh out/ioBroker-image-RPi_5_YYYY_MM_DD.zip [remote dir]
+# Works with both kinds of SFTP accounts:
+#  - main account, SFTP root = web root      => file goes to /images
+#  - account restricted to the images folder => its SFTP root "/" IS /images
+# Without SFTP_REMOTE_DIR the script uses /images if it exists, otherwise "/".
+# The final URL check catches a wrong folder in either case.
+#
+# Usage: ./upload-sftp.sh out/ioBroker-image-RPi_5_YYYY_MM_DD.zip
 # Env:   SFTP_HOST, SFTP_PORT (default 22), SFTP_USERNAME, SFTP_PASSWORD
-#        PUBLIC_BASE_URL (default https://iobroker.live)
+#        SFTP_REMOTE_DIR (optional, forces the remote folder)
+#        PUBLIC_DIR_URL (default https://iobroker.live/images)
 set -euo pipefail
 
 FILE=${1:?local file missing}
-REMOTE_DIR=${2:-/images}
+REMOTE_DIR=${SFTP_REMOTE_DIR:-}
 PORT=${SFTP_PORT:-22}
-PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-https://iobroker.live}
+PUBLIC_DIR_URL=${PUBLIC_DIR_URL:-https://iobroker.live/images}
 : "${SFTP_HOST:?SFTP_HOST not set}"
 : "${SFTP_USERNAME:?SFTP_USERNAME not set}"
 : "${SFTP_PASSWORD:?SFTP_PASSWORD not set}"
@@ -25,8 +31,15 @@ set sftp:auto-confirm yes
 set net:max-retries 3
 set net:timeout 60
 set net:reconnect-interval-base 10
-mkdir -p -f $REMOTE_DIR
-cd $REMOTE_DIR
+"
+if [ -n "$REMOTE_DIR" ]; then
+  CMDS+="cd $REMOTE_DIR
+"
+else
+  CMDS+="cd /images || cd /
+"
+fi
+CMDS+="pwd
 "
 for f in "${FILES[@]}"; do
   n=$(basename "$f")
@@ -39,11 +52,11 @@ done
 CMDS+="cls -l $NAME
 bye"
 
-echo ">>> Uploading ${FILES[*]} to sftp://$SFTP_HOST:$PORT$REMOTE_DIR"
+echo ">>> Uploading ${FILES[*]} to sftp://$SFTP_HOST:$PORT ${REMOTE_DIR:-(auto: /images or /)}"
 export LFTP_PASSWORD="$SFTP_PASSWORD"
 lftp --env-password -p "$PORT" -u "$SFTP_USERNAME" "sftp://$SFTP_HOST" <<<"$CMDS"
 
-URL="$PUBLIC_BASE_URL${REMOTE_DIR%/}/$NAME"
+URL="${PUBLIC_DIR_URL%/}/$NAME"
 echo ">>> Public URL: $URL"
 
 # Check that the web server delivers the complete file
