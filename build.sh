@@ -103,8 +103,20 @@ trap - EXIT
 OUT_NAME="ioBroker-image-RPi_5_$(date +%Y_%m_%d)"
 mv "$IMG" "$OUT/$OUT_NAME.img"
 echo ">>> Compressing..."
-xz -T0 -6 -f "$OUT/$OUT_NAME.img"
-( cd "$OUT" && sha256sum "$OUT_NAME.img.xz" > "$OUT_NAME.img.xz.sha256" )
+# zip, as before on iobroker.live; Raspberry Pi Imager and balenaEtcher read it directly
+rm -f "$OUT/$OUT_NAME.zip"
+( cd "$OUT" && zip -6 "$OUT_NAME.zip" "$OUT_NAME.img" && rm -f "$OUT_NAME.img" )
+( cd "$OUT" && sha256sum "$OUT_NAME.zip" > "$OUT_NAME.zip.sha256" )
+
+# Machine readable info for the workflow (upload, docs PR)
+cat > "$OUT/build-info.env" <<EOF
+IMAGE_NAME=$OUT_NAME
+IMAGE_FILE=$OUT_NAME.zip
+BASE_IMAGE=$SRC_NAME
+NODE_VERSION=$NODE_VER
+CONTROLLER_VERSION=$CTRL_VER
+EOF
+
 cat > "$OUT/release-notes.md" <<EOF
 ioBroker image for Raspberry Pi 5
 
@@ -114,4 +126,4 @@ ioBroker image for Raspberry Pi 5
 - Login: \`iob\` / \`$IOB_PASSWORD\` (change after first login with \`passwd\`)
 - Admin: http://$HOSTNAME_IMG.local:8081
 EOF
-echo ">>> Done: $OUT/$OUT_NAME.img.xz (based on $SRC_NAME)"
+echo ">>> Done: $OUT/$OUT_NAME.zip (based on $SRC_NAME)"

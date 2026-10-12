@@ -3,6 +3,10 @@ name: Build Raspberry Pi 5 image
 on:
   workflow_dispatch:
     inputs:
+      upload:
+        description: "Upload to iobroker.live and open a PR in ioBroker.docs (needs secrets)"
+        type: boolean
+        default: true
       publish:
         description: "Publish as GitHub Release"
         type: boolean
@@ -15,33 +19,71 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: build-image
+  cancel-in-progress: false
+
 jobs:
   build:
     # Native ARM64 runner: no emulation, free for public repositories
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 120
+    timeout-minutes: 150
+    env:
+      # Same secret names as in ioBroker.repobuilder (incl. the "SFPT" spelling)
+      SFTP_HOST: ${{ secrets.VAR_ACTIONS_SFPT_HOST }}
+      SFTP_PORT: ${{ secrets.VAR_ACTIONS_SFPT_PORT }}
+      SFTP_USERNAME: ${{ secrets.VAR_ACTIONS_SFTP_USERNAME }}
+      SFTP_PASSWORD: ${{ secrets.VAR_ACTIONS_SFTP_PASSWORD }}
+      DOCS_PR_TOKEN: ${{ secrets.DOCS_PR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install tools
-        run: sudo apt-get update && sudo apt-get install -y xz-utils parted e2fsprogs dosfstools openssl
+        run: sudo apt-get update && sudo apt-get install -y xz-utils parted e2fsprogs dosfstools openssl zip lftp
 
       - name: Build image
         env:
           IMG_URL: ${{ inputs.img_url }}
         run: |
-          chmod +x build.sh customize.sh
+          chmod +x build.sh customize.sh upload-sftp.sh docs-pr.sh
           if [ -n "$IMG_URL" ]; then sudo -E ./build.sh; else sudo ./build.sh; fi
           sudo chown -R "$USER" out
           ls -lh out
+          cat out/build-info.env >> "$GITHUB_ENV"
+          cat out/release-notes.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: iobroker-rpi5-image
           path: out/*
-          compression-level: 0   # already xz compressed
+          compression-level: 0   # already compressed
           retention-days: 14
+
+      - name: Upload to iobroker.live (SFTP)
+        id: sftp
+        if: ${{ inputs.upload && env.SFTP_HOST != '' && env.SFTP_USERNAME != '' && env.SFTP_PASSWORD != '' }}
+        run: |
+          ./upload-sftp.sh "out/$IMAGE_FILE" /images
+          echo "Image: https://iobroker.live/images/$IMAGE_FILE" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: SFTP skipped
+        if: ${{ inputs.upload && steps.sftp.outcome == 'skipped' }}
+        run: echo "::notice::SFTP upload skipped, secrets VAR_ACTIONS_SFPT_HOST / VAR_ACTIONS_SFTP_USERNAME / VAR_ACTIONS_SFTP_PASSWORD not set"
+
+      - name: Pull request in ioBroker.docs
+        if: ${{ steps.sftp.outcome == 'success' && env.DOCS_PR_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_PR_TOKEN }}
+          IMAGE_URL: ${{ steps.sftp.outputs.url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          export SHA256=$(cut -d' ' -f1 "out/$IMAGE_FILE.sha256")
+          ./docs-pr.sh
+
+      - name: Docs PR skipped
+        if: ${{ steps.sftp.outcome == 'success' && env.DOCS_PR_TOKEN == '' }}
+        run: echo "::notice::Docs PR skipped, secret DOCS_PR_TOKEN not set"
 
       - name: Publish release
         if: ${{ inputs.publish }}
@@ -51,5 +93,5 @@ jobs:
           name: ioBroker image for Raspberry Pi 5 (build ${{ github.run_number }})
           body_path: out/release-notes.md
           files: |
-            out/*.img.xz
+            out/*.zip
             out/*.sha256
